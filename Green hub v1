@@ -1,9 +1,9 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/Bad031/Green-Hub/refs/heads/main/Green%20hub%20v1'))()
 
 local Window = Rayfield:CreateWindow({
-	Name = "Rayfield Example Window",
+	Name = "❇️ Green Hub ❇️",
 	Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-	LoadingTitle = "Green Crew",
+	LoadingTitle = "Loading Files",
 	LoadingSubtitle = "by Green",
 	ShowText = "Rayfield", -- for mobile users to unhide rayfield, change if you'd like
 	Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
@@ -14,7 +14,7 @@ local Window = Rayfield:CreateWindow({
 	DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
 
 	ConfigurationSaving = {
-		Enabled = false,
+		Enabled = true,
 		FolderName = nil, -- Create a custom folder for your hub/game
 		FileName = "Green Hub"
 	},
@@ -29,11 +29,11 @@ local Window = Rayfield:CreateWindow({
 	KeySettings = {
 		Title = "Untitled",
 		Subtitle = "Key System",
-		Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
+		Note = "Join Discord to Obtain the Key", -- Use this to tell the user how to get a key
 		FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
 		SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
 		GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-		Key = {"Green"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+		Key = {"Green031"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
 	}
 })
 
