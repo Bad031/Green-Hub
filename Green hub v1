@@ -1,4 +1,5 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/tienkhanh1/spicy/main/Chilli.lua"))() 
 
 local Window = Rayfield:CreateWindow({
 	Name = "❇️ Green Hub ❇️",
@@ -14,7 +15,7 @@ local Window = Rayfield:CreateWindow({
 	DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
 
 	ConfigurationSaving = {
-		Enabled = true,
+		Enabled = false,
 		FolderName = nil, -- Create a custom folder for your hub/game
 		FileName = "Green Hub"
 	},
@@ -25,7 +26,7 @@ local Window = Rayfield:CreateWindow({
 		RememberJoins = true -- Set this to false to make them join the discord every time they load it up
 	},
 
-	KeySystem = true, -- Set this to true to use our key system
+	KeySystem = false, -- Set this to true to use our key system
 	KeySettings = {
 		Title = "Untitled",
 		Subtitle = "Key System",
@@ -38,4 +39,380 @@ local Window = Rayfield:CreateWindow({
 })
 
 local MainTab = Window:CreateTab("🏠 Home", nil) -- Title, Image
-local MainSection = Tab:CreateSection("Main")
+local MainSection = MainTab:CreateSection("Main")
+
+Rayfield:Notify({
+	Title = "Script Executed!",
+	Content = "Notification",
+	Duration = 5,
+	Image = nil,
+})
+
+local Button = MainTab:CreateButton({
+	Name = "🛠️ Fix Script",
+	Callback = function()
+		local player = game.Players.LocalPlayer -- für LocalScript
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+		if humanoid then
+			humanoid.Health = 0
+		end
+	end,
+})
+
+local flying = false
+local bodyGyro, bodyVelocity
+local connections = {}
+
+local function cleanup()
+	-- Flug beenden
+	flying = false
+
+	-- Humanoid.PlatformStand zurücksetzen
+	local Player = game.Players.LocalPlayer
+	local Character = Player.Character
+	if Character then
+		local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+		if Humanoid then
+			Humanoid.PlatformStand = false
+		end
+	end
+
+	-- Körperobjekte entfernen
+	if bodyGyro then bodyGyro:Destroy() end
+	if bodyVelocity then bodyVelocity:Destroy() end
+	bodyGyro = nil
+	bodyVelocity = nil
+
+	-- Alle Events trennen
+	for _, conn in pairs(connections) do
+		conn:Disconnect()
+	end
+	connections = {}
+
+	_G.FLY_RUNNING = nil
+end
+
+local Toggle = MainTab:CreateToggle({
+	Name = "✈️ Fly",
+	CurrentValue = false,
+	Flag = "Toggle1", 
+	Callback = function(Value)
+			if Value then
+				if _G.FLY_RUNNING then return end
+				_G.FLY_RUNNING = true
+
+				local Players = game:GetService("Players")
+				local UIS = game:GetService("UserInputService")
+				local RunService = game:GetService("RunService")
+
+				local Player = Players.LocalPlayer
+				local Character = Player.Character or Player.CharacterAdded:Wait()
+				local Humanoid = Character:WaitForChild("Humanoid")
+				local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+				flying = false
+				local speed = 50
+
+				local function toggleFly()
+					flying = not flying
+
+					if flying then
+						Humanoid.PlatformStand = true
+
+						bodyGyro = Instance.new("BodyGyro")
+						bodyGyro.P = 9e4
+						bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+						bodyGyro.CFrame = HumanoidRootPart.CFrame
+						bodyGyro.Parent = HumanoidRootPart
+
+						bodyVelocity = Instance.new("BodyVelocity")
+						bodyVelocity.Velocity = Vector3.zero
+						bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+						bodyVelocity.Parent = HumanoidRootPart
+					else
+						Humanoid.PlatformStand = false
+
+						if bodyGyro then bodyGyro:Destroy() end
+						if bodyVelocity then bodyVelocity:Destroy() end
+						bodyGyro = nil
+						bodyVelocity = nil
+					end
+				end
+
+				table.insert(connections, UIS.InputBegan:Connect(function(input, processed)
+					if processed then return end
+					if input.KeyCode == Enum.KeyCode.F then
+						toggleFly()
+					end
+				end))
+
+				table.insert(connections, RunService.RenderStepped:Connect(function()
+					if flying and bodyVelocity and bodyGyro then
+						local cam = workspace.CurrentCamera
+						local dir = Vector3.new(
+							(UIS:IsKeyDown(Enum.KeyCode.D) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.A) and 1 or 0),
+							(UIS:IsKeyDown(Enum.KeyCode.Space) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.LeftControl) and 1 or 0),
+							(UIS:IsKeyDown(Enum.KeyCode.S) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.W) and 1 or 0)
+						)
+
+						dir = dir.Magnitude > 0 and dir.Unit * speed or Vector3.zero
+						bodyVelocity.Velocity = cam.CFrame:VectorToWorldSpace(dir)
+						bodyGyro.CFrame = cam.CFrame
+					end
+				end))
+
+				table.insert(connections, Player.CharacterAdded:Connect(function()
+					cleanup()
+				end))
+
+				Rayfield:Notify({
+					Title = "Fly Script is Active",
+					Content = "Press F to Toggle The fly",
+					Duration = 6.5,
+					Image = nil,
+				})
+
+			else
+				cleanup()
+			end
+
+	end,
+})
+
+
+local JumpConnection 
+
+local Toggle = MainTab:CreateToggle({
+	Name = "🎈 Infinite Jump",
+	CurrentValue = false,
+	Flag = "Toggle_InfiniteJump",
+	Callback = function(Value)
+		local UserInputService = game:GetService("UserInputService")
+		local Players = game:GetService("Players")
+		local player = Players.LocalPlayer
+		local character = player.Character or player.CharacterAdded:Wait()
+		local humanoid = character:WaitForChild("Humanoid")
+
+		if Value then
+			
+			if JumpConnection then return end -- nicht doppelt verbinden
+			JumpConnection = UserInputService.JumpRequest:Connect(function()
+				if humanoid and humanoid.Parent then
+					humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+				end
+			end)
+		else
+			
+			if JumpConnection then
+				JumpConnection:Disconnect()
+				JumpConnection = nil
+			end
+		end
+	end,
+})
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+local humanoid = character:WaitForChild("Humanoid")
+
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+
+local speed = 50
+
+local flying = false
+local hovering = false
+
+local velocity
+
+local function createVelocity()
+	if not velocity then
+		velocity = Instance.new("BodyVelocity")
+		velocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+		velocity.P = 3000
+		velocity.Velocity = Vector3.zero
+		velocity.Parent = hrp
+	end
+end
+
+local function removeVelocity()
+	if velocity then
+		velocity:Destroy()
+		velocity = nil
+	end
+end
+
+local function updateAutoRotate()
+	humanoid.AutoRotate = not (flying or hovering)
+end
+
+local function updateCollisions()
+	hrp.CanCollide = not (flying or hovering)
+end
+
+local keys = {
+	W = false,
+	A = false,
+	S = false,
+	D = false,
+	Space = false,
+	LeftShift = false,
+}
+
+local function getInputVector()
+	local moveDirection = Vector3.zero
+	-- S und W gespiegelt (S = vorwärts, W = rückwärts):
+	if keys.S then moveDirection += Vector3.new(0, 0, -1) end
+	if keys.W then moveDirection += Vector3.new(0, 0, 1) end
+	if keys.A then moveDirection += Vector3.new(-1, 0, 0) end
+	if keys.D then moveDirection += Vector3.new(1, 0, 0) end
+
+	local camCF = camera.CFrame
+	local lookVector = Vector3.new(camCF.LookVector.X, 0, camCF.LookVector.Z)
+	if lookVector.Magnitude == 0 then
+		lookVector = Vector3.new(0, 0, -1)
+	else
+		lookVector = lookVector.Unit
+	end
+	local rightVector = Vector3.new(camCF.RightVector.X, 0, camCF.RightVector.Z)
+	if rightVector.Magnitude == 0 then
+		rightVector = Vector3.new(1, 0, 0)
+	else
+		rightVector = rightVector.Unit
+	end
+
+	local direction = (lookVector * moveDirection.Z + rightVector * moveDirection.X)
+
+	if flying then
+		if keys.Space then direction += Vector3.new(0, 1, 0) end
+		if keys.LeftShift then direction += Vector3.new(0, -1, 0) end
+	end
+
+	if direction.Magnitude > 0 then
+		return direction.Unit
+	else
+		return Vector3.zero
+	end
+end
+
+local function updateMovement()
+	if flying then
+		createVelocity()
+		local input = getInputVector()
+		if input == Vector3.zero then
+			velocity.Velocity = Vector3.zero
+		else
+			velocity.Velocity = input * speed
+		end
+	elseif hovering then
+		createVelocity()
+		local input = getInputVector()
+		local horizontalInput = Vector3.new(input.X, 0, input.Z)
+		if horizontalInput.Magnitude > 0 then
+			velocity.Velocity = horizontalInput * speed
+		else
+			velocity.Velocity = Vector3.new(0, 0, 0)
+		end
+	else
+		removeVelocity()
+	end
+end
+
+-- UI-Container
+local gui = player:WaitForChild("PlayerGui"):FindFirstChild("FlyHoverUI")
+if gui then gui:Destroy() end
+local gui = Instance.new("ScreenGui")
+gui.Name = "FlyHoverUI"
+gui.Parent = player:WaitForChild("PlayerGui")
+
+-- Buttons erzeugen, aber noch nicht sichtbar
+local function createButton(name, posY)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 120, 0, 40)
+	btn.Position = UDim2.new(0, 20, 0, posY)
+	btn.Text = name .. ": OFF"
+	btn.BackgroundColor3 = Color3.new(0,0,0)
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Font = Enum.Font.SourceSansBold
+	btn.TextSize = 22
+	btn.BorderSizePixel = 0
+	btn.AnchorPoint = Vector2.new(0,0)
+	btn.AutoButtonColor = false
+	btn.Visible = false
+	-- Abrunden
+	local uicorner = Instance.new("UICorner")
+	uicorner.CornerRadius = UDim.new(0, 10)
+	uicorner.Parent = btn
+	btn.Parent = gui
+	return btn
+end
+
+local flyButton = createButton("Fly", 20)
+local hoverButton = createButton("Hover", 70)
+
+flyButton.MouseButton1Click:Connect(function()
+	flying = not flying
+	if flying then
+		hovering = false
+	end
+	flyButton.Text = flying and "Fly: ON" or "Fly: OFF"
+	hoverButton.Text = "Hover: OFF"
+	updateAutoRotate()
+	updateCollisions()
+	updateMovement()
+end)
+
+hoverButton.MouseButton1Click:Connect(function()
+	hovering = not hovering
+	if hovering then
+		flying = false
+	end
+	hoverButton.Text = hovering and "Hover: ON" or "Hover: OFF"
+	flyButton.Text = "Fly: OFF"
+	updateAutoRotate()
+	updateCollisions()
+	updateMovement()
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if keys[input.KeyCode.Name] ~= nil then
+		keys[input.KeyCode.Name] = true
+		updateMovement()
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if keys[input.KeyCode.Name] ~= nil then
+		keys[input.KeyCode.Name] = false
+		updateMovement()
+	end
+end)
+
+-- Toggle aus deinem UI Framework (MainTab:CreateToggle)
+local Toggle = MainTab:CreateToggle({
+	Name = "Fly & Hover",
+	CurrentValue = false,
+	Flag = "FlyHoverToggle",
+	Callback = function(Value)
+		if Value then
+			flyButton.Visible = true
+			hoverButton.Visible = true
+		else
+			flyButton.Visible = false
+			hoverButton.Visible = false
+			-- Fly und Hover aus
+			flying = false
+			hovering = false
+			updateAutoRotate()
+			updateCollisions()
+			updateMovement()
+			flyButton.Text = "Fly: OFF"
+			hoverButton.Text = "Hover: OFF"
+		end
+	end,
+})
